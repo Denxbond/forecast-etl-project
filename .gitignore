@@ -1,0 +1,35 @@
+# Local environment and secrets
+.env
+.venv/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Raw and generated data
+data/raw/**
+!data/raw/.gitkeep
+
+# dbt generated output and local credentials
+dbt/**/target/
+dbt/**/logs/
+dbt/**/dbt_packages/
+dbt/**/profiles.yml
+
+# Airflow runtime output
+logs/
+airflow.cfg
+airflow.db
+
+# macOS and editors
+.DS_Store
+.idea/
+.vscode/
+

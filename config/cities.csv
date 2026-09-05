@@ -1,0 +1,12 @@
+city_id,city_name,country_code,latitude,longitude,timezone,active
+kyiv,Kyiv,UA,50.4501,30.5234,Europe/Kyiv,true
+london,London,GB,51.5074,-0.1278,Europe/London,true
+new_york,New York,US,40.7128,-74.0060,America/New_York,true
+toronto,Toronto,CA,43.6532,-79.3832,America/Toronto,true
+sao_paulo,Sao Paulo,BR,-23.5505,-46.6333,America/Sao_Paulo,true
+cape_town,Cape Town,ZA,-33.9249,18.4241,Africa/Johannesburg,true
+delhi,Delhi,IN,28.6139,77.2090,Asia/Kolkata,true
+singapore,Singapore,SG,1.3521,103.8198,Asia/Singapore,true
+tokyo,Tokyo,JP,35.6762,139.6503,Asia/Tokyo,true
+sydney,Sydney,AU,-33.8688,151.2093,Australia/Sydney,true
+

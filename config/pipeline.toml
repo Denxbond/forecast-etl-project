@@ -1,0 +1,21 @@
+[open_meteo]
+base_url = "https://api.open-meteo.com/v1/forecast"
+hourly_variables = [
+  "temperature_2m",
+  "precipitation",
+  "wind_speed_10m",
+  "weather_code",
+]
+forecast_days = 7
+timezone = "UTC"
+timeformat = "iso8601"
+temperature_unit = "celsius"
+precipitation_unit = "mm"
+wind_speed_unit = "kmh"
+
+[ingestion]
+# Airflow will interpret this cron expression in UTC in Stage 10.
+schedule = "0 */6 * * *"
+request_timeout_seconds = 30
+max_retries = 3
+retry_backoff_seconds = 2
