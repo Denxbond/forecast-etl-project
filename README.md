@@ -7,8 +7,8 @@ The pipeline will collect hourly forecasts for ten cities, preserve every raw
 API response, load normalized forecast snapshots into PostgreSQL, transform the
 data with dbt, and orchestrate the workflow with Airflow.
 
-> Project status: Stage 3 in progress — single-city ingestion and raw snapshot
-> preservation are implemented. Database loading is not yet implemented.
+> Project status: Batch ingestion, PostgreSQL setup, and offline normalization
+> are verified. Transactional database loading is next.
 
 ## Why this project exists
 
@@ -124,13 +124,25 @@ Fixture valid: 168 hourly rows from 2026-09-05T00:00 to 2026-09-11T23:00.
 See [`docs/api-contract.md`](docs/api-contract.md) for the response structure,
 field meanings, and assumptions discovered from the live request.
 
-## Single-city ingestion (Stage 3)
+## Forecast ingestion (Stage 3)
 
 From the repository root, make a live request and preserve its response:
 
 ```bash
 PYTHONPATH=src python3 -m weather_pipeline.ingest --city kyiv
 ```
+
+Collect every active city sequentially:
+
+```bash
+PYTHONPATH=src python3 -m weather_pipeline.ingest --all
+```
+
+Use either `--city` or `--all`. Batch collection continues after individual
+network, storage, or contract failures and preserves successful snapshots.
+The summary reports city successes and failures; any city failure returns exit
+code 1. Each city has its own retrieval timestamp. Retrying `--all` fetches every
+active city again; use `--city CITY_ID` to retry only a failed city.
 
 The command validates configuration and requires a known, active city. It uses
 the configured timeout and retry policy, then saves the original response bytes,
@@ -147,10 +159,36 @@ After saving, the command validates response structure, UTC offset, grid
 coordinates, units, hourly coverage and measurement types. Contract failures
 retain the raw snapshot and report its path, returning exit code 1. Null
 measurements remain allowed; `_SUCCESS` is not a validation certificate.
-Offline tests run through `make check` without network calls. Multi-city
-collection remains to be added before Stage 3 is complete.
+Offline tests run through `make check` without network calls. The live batch
+was verified with 10 successful cities and no failures.
 
 ## Planned warehouse models
+
+Stage 4 database setup is defined in `compose.yaml`. Docker Compose reads the
+existing local `.env` automatically. Start PostgreSQL with:
+
+```bash
+docker compose config --quiet
+docker compose up -d --wait warehouse
+docker compose ps
+```
+
+The service uses PostgreSQL 17.11, stores data in a named Docker volume, and
+listens only on localhost at `WAREHOUSE_PORT` (default 5432). Server time is UTC.
+A health check waits until PostgreSQL accepts connections. Create the ingestion
+tables explicitly with `make db-init`, then list them with `make db-tables`.
+Run `make check-db` for rollback-only database constraint checks.
+The SQL in `sql/init/001_ingestion_schema.sql` creates `raw.city`,
+`raw.forecast_snapshot`, and `raw.hourly_forecast` in one transaction. It works
+with an existing volume; no volume reset is required. Rerunning skips existing
+tables but does not upgrade their definitions. Loading is not implemented yet.
+The image tag fixes the PostgreSQL patch and
+Debian variant; digest pinning is still needed for exact image reproducibility.
+
+Stop the container while retaining its data with `docker compose stop warehouse`.
+`docker compose down` also retains the named volume; adding `--volumes` deletes
+it. Database environment variables initialize an empty volume only: editing
+`.env` later does not rename existing databases/users or change their passwords.
 
 - `dim_city`
 - `fct_hourly_forecast`

@@ -3,7 +3,7 @@
 PYTHON ?= python3
 VENV_DIR ?= .venv
 
-.PHONY: help bootstrap check check-config inspect-fixture check-python
+.PHONY: help bootstrap check check-config inspect-fixture check-python db-init db-tables check-db
 
 help: ## Show available development commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -23,3 +23,12 @@ check-python: ## Run offline Python tests
 	PYTHONPATH=src $(PYTHON) -m unittest discover -s tests/unit -v
 
 check: check-config inspect-fixture check-python ## Run all checks available at the current stage
+
+db-init: ## Create ingestion schema and tables in the running warehouse
+	docker compose exec -T warehouse sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < sql/init/001_ingestion_schema.sql
+
+db-tables: ## List ingestion tables in the running warehouse
+	docker compose exec -T warehouse sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -c "\dt raw.*"'
+
+check-db: ## Verify forecast keys in PostgreSQL and roll back test rows
+	docker compose exec -T warehouse sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < tests/integration/check_forecast_keys.sql
