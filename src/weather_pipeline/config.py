@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import math
 import re
 import tomllib
 from pathlib import Path
@@ -50,7 +51,7 @@ def validate_pipeline_config() -> dict:
         )
 
     forecast_days = api.get("forecast_days")
-    if not isinstance(forecast_days, int) or not 1 <= forecast_days <= 16:
+    if type(forecast_days) is not int or not 1 <= forecast_days <= 16:
         raise ValueError("open_meteo.forecast_days must be an integer from 1 to 16")
 
     if api.get("timezone") != "UTC":
@@ -65,10 +66,17 @@ def validate_pipeline_config() -> dict:
         if api.get(field) != expected:
             raise ValueError(f"open_meteo.{field} must be {expected}")
 
-    if ingestion.get("request_timeout_seconds", 0) <= 0:
-        raise ValueError("ingestion.request_timeout_seconds must be positive")
-    if ingestion.get("max_retries", -1) < 0:
-        raise ValueError("ingestion.max_retries cannot be negative")
+    retries = ingestion.get("max_retries")
+    if type(retries) is not int or retries < 0:
+        raise ValueError("ingestion.max_retries must be a non-negative integer")
+    for field in ("request_timeout_seconds", "retry_backoff_seconds"):
+        value = ingestion.get(field)
+        if type(value) not in (int, float) or not math.isfinite(value):
+            raise ValueError(f"ingestion.{field} must be a finite number")
+        if field == "request_timeout_seconds" and value <= 0:
+            raise ValueError(f"ingestion.{field} must be positive")
+        if field == "retry_backoff_seconds" and value < 0:
+            raise ValueError(f"ingestion.{field} cannot be negative")
 
     return config
 
@@ -83,7 +91,8 @@ def parse_boolean(value: str, *, city_id: str) -> bool:
 def validate_city_config() -> list[dict[str, str]]:
     with CITY_CONFIG.open(newline="", encoding="utf-8") as config_file:
         reader = csv.DictReader(config_file)
-        if set(reader.fieldnames or []) != EXPECTED_CITY_COLUMNS:
+        columns = reader.fieldnames or []
+        if set(columns) != EXPECTED_CITY_COLUMNS or len(columns) != len(EXPECTED_CITY_COLUMNS):
             raise ValueError(
                 "cities.csv columns do not match the expected configuration contract"
             )
@@ -93,7 +102,9 @@ def validate_city_config() -> list[dict[str, str]]:
         raise ValueError("cities.csv must contain at least one city")
 
     seen_ids: set[str] = set()
-    for city in cities:
+    for row_number, city in enumerate(cities, start=2):
+        if None in city or any(value is None for value in city.values()):
+            raise ValueError(f"cities.csv row {row_number}: wrong number of columns")
         city_id = city["city_id"].strip()
         if not CITY_ID_PATTERN.fullmatch(city_id):
             raise ValueError(f"Invalid stable city_id: {city_id!r}")

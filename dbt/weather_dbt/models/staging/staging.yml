@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_hourly_forecast
+    description: "One forecast hour per retrieval snapshot; preserves all versions and null measurements."
+    columns:
+      - name: city_id
+        data_tests:
+          - not_null
+      - name: retrieved_at
+        description: "Original retrieval instant, part of the forecast version key."
+        data_tests:
+          - not_null
+      - name: forecast_at
+        description: "Forecast hour; may precede retrieval time."
+        data_tests:
+          - not_null
+      - name: temperature_2m
+        description: "Temperature in degrees Celsius; nullable."
+      - name: precipitation
+        description: "Preceding-hour precipitation in millimetres; nullable."
+      - name: wind_speed_10m
+        description: "Wind speed in km/h; nullable."
+      - name: weather_code
+        description: "WMO weather code; nullable."
+
+  - name: stg_forecast_snapshot
+    description: "One response per city and retrieval timestamp; all retrieval versions are preserved."
+    columns:
+      - name: city_id
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_city')
+                field: city_id
+      - name: retrieved_at
+        description: "UTC retrieval instant; together with city_id identifies the snapshot."
+        data_tests:
+          - not_null
+
+  - name: stg_city
+    description: "One row per configured city, including inactive cities for historical reporting."
+    columns:
+      - name: city_id
+        description: "Stable city identifier; the grain of this model."
+        data_tests:
+          - not_null
+          - unique
+      - name: requested_latitude
+        description: "Requested city latitude, rather than the returned forecast grid latitude."
+      - name: requested_longitude
+        description: "Requested city longitude, rather than the returned forecast grid longitude."
+      - name: city_timezone
+        description: "IANA timezone retained for local reporting."
+      - name: is_active
+        description: "Whether the stored city record is active; staging does not filter on this flag."

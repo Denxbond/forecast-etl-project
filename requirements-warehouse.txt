@@ -1,0 +1,4 @@
+# Runtime lock for the verified macOS / Python 3.14 environment.
+psycopg==3.3.5
+psycopg-binary==3.3.5
+python-dotenv==1.2.3

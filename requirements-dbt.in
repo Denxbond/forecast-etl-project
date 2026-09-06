@@ -1,0 +1,3 @@
+# Direct dbt dependencies; isolated from the ingestion environment.
+dbt-core==1.11.14
+dbt-postgres==1.11.0

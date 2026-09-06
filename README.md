@@ -7,8 +7,11 @@ The pipeline will collect hourly forecasts for ten cities, preserve every raw
 API response, load normalized forecast snapshots into PostgreSQL, transform the
 data with dbt, and orchestrate the workflow with Airflow.
 
-> Project status: Batch ingestion, PostgreSQL setup, and offline normalization
-> are verified. Transactional database loading is next.
+> Project status: Stage 7 — dbt sources and staging — is complete. Three
+> staging views and eleven data tests pass, preserving every retrieval version.
+> Next: Stage 8 — forecast-version transformations.
+> See [the local dbt guide](docs/dbt.md) for setup and commands.
+> See [the testing guide](docs/testing.md) for checks and known limits.
 
 ## Why this project exists
 
@@ -94,8 +97,10 @@ in `cities.csv` will later be used to derive local forecast dates in dbt.
   versions inside Docker rather than being installed into the basic local
   Python environment.
 
-This stage deliberately has no third-party Python dependencies. Its validation
-command uses only the Python 3.11 standard library.
+Offline validation uses only the Python standard library. Warehouse loading uses
+the `warehouse` optional dependency group (Psycopg and python-dotenv).
+`requirements-warehouse.txt` locks the runtime packages verified on macOS with
+Python 3.14; other platforms/runtimes still need their own dependency verification.
 
 ## Development commands
 
@@ -162,6 +167,52 @@ measurements remain allowed; `_SUCCESS` is not a validation certificate.
 Offline tests run through `make check` without network calls. The live batch
 was verified with 10 successful cities and no failures.
 
+## Loading a saved snapshot
+
+Install the warehouse dependencies in an existing `.venv`:
+
+```bash
+make install-warehouse
+```
+
+Load a completed snapshot (replace the example path with an existing directory):
+
+```bash
+PYTHONPATH=src .venv/bin/python -m weather_pipeline.load data/raw/CITY_ID/SNAPSHOT_TIMESTAMP
+make check-load
+```
+
+Replay all saved snapshots under a raw root:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m weather_pipeline.load --all data/raw
+```
+
+Discovery scans `ROOT/city/snapshot` directories in sorted order. Each completed
+snapshot gets its own connection and transaction. The summary distinguishes
+loaded, already-loaded, failed, and incomplete snapshots. Missing `_SUCCESS`
+means skip as incomplete (including older snapshots made before markers existed).
+Incomplete skips alone do not fail the run; validation or loading failures return
+exit code 1 after the remaining snapshots are attempted. Missing or empty roots
+also fail. Raw files are never modified, and replay makes no API requests.
+
+The loader reads the project `.env`, with exported environment variables taking
+precedence. It validates and normalizes the saved files before connecting. One
+transaction inserts a missing configured city, its snapshot, and all hourly rows.
+Existing city records are left unchanged; historical snapshots can be loaded for
+inactive configured cities. City configuration synchronization is not implemented.
+
+An identical replay adds nothing. An existing snapshot key with different request
+parameters, grid coordinates, or hourly records raises an error rather than
+overwriting data. Moving a raw file does not change its snapshot identity; the
+original stored path remains unchanged. The database does not store the exact
+response bytes, which remain in raw files. Idempotency compares stored fields,
+not byte-level differences in JSON formatting or unused response metadata.
+
+`make check-load` runs three real database integration tests with rolled-back
+test records and ten simulated batch/settings checks. `make check` remains offline and
+does not require the driver.
+
 ## Planned warehouse models
 
 Stage 4 database setup is defined in `compose.yaml`. Docker Compose reads the
@@ -181,7 +232,7 @@ Run `make check-db` for rollback-only database constraint checks.
 The SQL in `sql/init/001_ingestion_schema.sql` creates `raw.city`,
 `raw.forecast_snapshot`, and `raw.hourly_forecast` in one transaction. It works
 with an existing volume; no volume reset is required. Rerunning skips existing
-tables but does not upgrade their definitions. Loading is not implemented yet.
+tables but does not upgrade their definitions.
 The image tag fixes the PostgreSQL patch and
 Debian variant; digest pinning is still needed for exact image reproducibility.
 
@@ -225,6 +276,6 @@ used only for this non-commercial educational project.
 - Failure, retry, and replay runbook
 - Architecture diagram
 - Example analytical queries
-- Test strategy and CI status
+- CI status (test strategy is documented in `docs/testing.md`)
 - Screenshots of Airflow and dbt documentation
 - Known limitations and future improvements

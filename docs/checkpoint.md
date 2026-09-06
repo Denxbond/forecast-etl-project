@@ -1,14 +1,14 @@
-# Learning checkpoint — 2026-09-05
+# Learning checkpoint — 2026-09-06
 
 Stages 1 and 2 are complete. Live batch ingestion and PostgreSQL setup are
-verified. Stage 5 normalization is implemented; transactional loading is next.
+verified. Stage 5 normalization and transactional single-snapshot loading are implemented.
 
 Implemented: shared configuration validation, single-city API requests, bounded
 retries with Retry-After handling, immutable raw snapshot writing with a
 completion marker, response-contract validation, and an ingestion CLI.
 
 Verification: `make check` validates configuration, the stored Kyiv fixture, and
-24 offline tests. Live requests and raw files under `data/raw` are not required
+48 offline tests. Live requests and raw files under `data/raw` are not required
 for those checks. The committed fixture is retained for reproducibility.
 
 Batch collection is now implemented with `--all`: active cities run sequentially,
@@ -23,8 +23,24 @@ The three raw tables are created. `make check-db` verifies forecast keys and
 relationships with rollback-only test rows. Normalization preserves 168 hourly
 records, UTC timestamps, nulls, and snapshot identity.
 
-Next: read a completed snapshot directory, validate its metadata and response,
-then prepare snapshot and hourly records for transactional, idempotent loading.
+Snapshot preparation is implemented and verified against a saved Kyiv response.
+It requires _SUCCESS and uses saved request parameters and retrieval metadata.
+Transactional loading is implemented in load.py. The saved Kyiv snapshot
+20260905T121859.750902Z was loaded and replayed; 168 rows remain. Three real
+integration tests verify replay, new versions, conflict rejection, and rollback.
+Run make check-load with PostgreSQL running; make check still runs 48 offline tests.
+Bulk replay is implemented and verified. The first run loaded 10 additional
+snapshots, found 1 already loaded, and skipped 1 older unmarked Kyiv directory.
+The second run loaded 0 and found all 11 already loaded. Warehouse totals are
+10 cities, 11 snapshots, and 1848 hourly rows. Thirteen loader checks pass (three
+real database tests and ten simulated batch/settings checks).
+Stage 6 testing review is complete: raw preservation, configuration failures,
+HTTP behavior, and database settings now have reusable tests. All three check
+commands passed on 2026-09-06; see docs/testing.md.
+Stage 7 is complete: three sources, three staging views, and eleven dbt tests.
+Source/staging counts match (10, 11, 1848). Run make dbt-build; expected PASS=14.
+The isolated dbt environment uses Python 3.12, Core 1.11.14, adapter 1.11.0.
+See docs/dbt.md. Next: Stage 8 — forecast-version transformations.
 Image digest pinning remains outstanding for exact Docker reproducibility.
 
 Continue with short practical explanations and focused changes. Explain the
@@ -38,7 +54,6 @@ Important boundaries:
 - Preserve separate retrieval snapshots for the same city and forecast hour.
 - `_SUCCESS` means raw writing completed, not that validation passed.
 - Validation failures retain raw data; future loaders must validate it again.
-- A new live request creates a new snapshot; database replay idempotency is not
-  implemented yet.
+- A new live request creates a new snapshot; database replay now verifies existing records without adding duplicates.
 - Earlier raw snapshots made before completion markers were introduced are
   unchanged and may lack `_SUCCESS`.

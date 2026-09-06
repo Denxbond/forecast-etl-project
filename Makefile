@@ -2,8 +2,27 @@
 
 PYTHON ?= python3
 VENV_DIR ?= .venv
+DBT_PYTHON ?= python3.12
+DBT_VENV_DIR ?= .venv-dbt
 
-.PHONY: help bootstrap check check-config inspect-fixture check-python db-init db-tables check-db
+.PHONY: install-dbt
+.PHONY: dbt-build
+dbt-build: ## Build dbt staging views and run their data tests
+	$(VENV_DIR)/bin/python scripts/run_dbt.py build
+
+.PHONY: dbt-debug
+.PHONY: dbt-sources
+dbt-sources: ## List declared dbt source tables without querying PostgreSQL
+	$(VENV_DIR)/bin/python scripts/run_dbt.py ls --resource-type source --output name
+
+dbt-debug: ## Verify the local dbt project and PostgreSQL connection
+	$(VENV_DIR)/bin/python scripts/run_dbt.py debug
+
+install-dbt: ## Create the separate dbt environment and install locked dependencies
+	$(DBT_PYTHON) -m venv $(DBT_VENV_DIR)
+	$(DBT_VENV_DIR)/bin/python -m pip install -r requirements-dbt.txt
+
+.PHONY: help bootstrap check check-config inspect-fixture check-python db-init db-tables check-db install-warehouse check-load
 
 help: ## Show available development commands
 	@awk 'BEGIN {FS = ":.*## "; printf "Available commands:\n"} /^[a-zA-Z_-]+:.*## / {printf "  %-15s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -32,3 +51,9 @@ db-tables: ## List ingestion tables in the running warehouse
 
 check-db: ## Verify forecast keys in PostgreSQL and roll back test rows
 	docker compose exec -T warehouse sh -c 'psql -X -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' < tests/integration/check_forecast_keys.sql
+
+install-warehouse: ## Install locked warehouse dependencies into .venv
+	$(VENV_DIR)/bin/python -m pip install -r requirements-warehouse.txt
+
+check-load: ## Check transactional loading against PostgreSQL; roll back test data
+	PYTHONPATH=src $(VENV_DIR)/bin/python -m unittest discover -s tests/integration -p 'test_load*.py' -v

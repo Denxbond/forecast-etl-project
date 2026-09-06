@@ -1,6 +1,7 @@
 # Local environment and secrets
 .env
 .venv/
+.venv-dbt/
 
 # Python
 __pycache__/
@@ -32,4 +33,3 @@ airflow.db
 .DS_Store
 .idea/
 .vscode/
-

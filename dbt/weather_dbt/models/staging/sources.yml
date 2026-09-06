@@ -1,0 +1,48 @@
+version: 2
+
+sources:
+  - name: weather_raw
+    description: "Validated forecasts loaded by Python, preserving retrieval versions."
+    schema: raw
+    tables:
+      - name: city
+        description: "One configured city per city_id; coordinates are requested city coordinates."
+        columns:
+          - name: city_id
+            description: "Stable city identifier from cities.csv."
+          - name: timezone
+            description: "City IANA timezone for future local reporting."
+
+      - name: forecast_snapshot
+        description: "One retrieved response per (city_id, retrieved_at)."
+        columns:
+          - name: city_id
+            description: "City associated with this response."
+          - name: retrieved_at
+            description: "UTC instant when Python finished downloading the response."
+          - name: raw_response_path
+            description: "Path to the preserved response file."
+          - name: request_params
+            description: "Parameters used for the original API request."
+          - name: grid_latitude
+            description: "Returned forecast grid latitude; may differ from city latitude."
+          - name: grid_longitude
+            description: "Returned forecast grid longitude; may differ from city longitude."
+
+      - name: hourly_forecast
+        description: "One hour per (city_id, retrieved_at, forecast_at); all retrieval versions remain."
+        columns:
+          - name: city_id
+            description: "City being forecast."
+          - name: retrieved_at
+            description: "Retrieval snapshot timestamp, not a model issue timestamp."
+          - name: forecast_at
+            description: "UTC forecast hour; may precede retrieved_at."
+          - name: temperature_2m
+            description: "Temperature in degrees Celsius; null means missing."
+          - name: precipitation
+            description: "Preceding-hour precipitation in millimetres; null means missing."
+          - name: wind_speed_10m
+            description: "Wind speed in km/h; null means missing."
+          - name: weather_code
+            description: "WMO weather code; null means missing."
