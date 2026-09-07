@@ -7,7 +7,7 @@ DBT_VENV_DIR ?= .venv-dbt
 
 .PHONY: install-dbt
 .PHONY: dbt-build
-dbt-build: ## Build dbt staging views and run their data tests
+dbt-build: ## Build all dbt models and run their data tests
 	$(VENV_DIR)/bin/python scripts/run_dbt.py build
 
 .PHONY: dbt-debug

@@ -68,5 +68,20 @@ On 2026-09-06, `dbt build` passed all three views and eleven tests:
 11 snapshots, and 1848 hourly records. Counts describe this checkpoint, not
 permanent assertions: new retrievals will increase them.
 
-Stage 8 will introduce forecast-version transformations. Image digest pinning,
-cross-platform dependency verification, and later CI remain separate work.
+## Stage 8 forecast versions
+
+`int_forecast_versions` keeps the hourly key `(city_id, retrieved_at,
+forecast_at)` and adds two representations of lead time:
+
+- `forecast_lead_time`: the exact PostgreSQL interval `forecast_at - retrieved_at`.
+- `forecast_lead_hours`: the same difference expressed as decimal hours for
+  filtering, charting, and future horizon buckets.
+
+Lead time may be negative because the API's forecast window begins at midnight,
+which can precede retrieval. The model does not filter those rows or collapse
+retrieval versions. Six model tests check non-null keys and derived fields plus
+composite uniqueness. On 2026-09-07, the full build passed four views and
+seventeen tests: `PASS=21 WARN=0 ERROR=0`.
+
+Image digest pinning, cross-platform dependency verification, and later CI
+remain separate work.

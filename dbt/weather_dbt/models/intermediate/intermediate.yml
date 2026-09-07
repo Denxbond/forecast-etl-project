@@ -1,0 +1,26 @@
+version: 2
+
+models:
+  - name: int_forecast_versions
+    description: "One forecast hour per retrieval, enriched with the exact forecast lead time. All retrieval versions are preserved."
+    columns:
+      - name: city_id
+        description: "Stable city identifier; part of the model grain."
+        data_tests:
+          - not_null
+      - name: retrieved_at
+        description: "UTC instant when downloading the forecast response finished; part of the model grain."
+        data_tests:
+          - not_null
+      - name: forecast_at
+        description: "UTC hour being predicted; part of the model grain and allowed to precede retrieval."
+        data_tests:
+          - not_null
+      - name: forecast_lead_time
+        description: "Exact PostgreSQL interval from retrieval to forecast hour (forecast_at - retrieved_at); may be negative."
+        data_tests:
+          - not_null
+      - name: forecast_lead_hours
+        description: "Exact lead time expressed as decimal hours for filtering, charting, and later horizon bucketing; may be negative."
+        data_tests:
+          - not_null

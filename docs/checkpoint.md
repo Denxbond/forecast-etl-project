@@ -38,9 +38,12 @@ Stage 6 testing review is complete: raw preservation, configuration failures,
 HTTP behavior, and database settings now have reusable tests. All three check
 commands passed on 2026-09-06; see docs/testing.md.
 Stage 7 is complete: three sources, three staging views, and eleven dbt tests.
-Source/staging counts match (10, 11, 1848). Run make dbt-build; expected PASS=14.
-The isolated dbt environment uses Python 3.12, Core 1.11.14, adapter 1.11.0.
-See docs/dbt.md. Next: Stage 8 — forecast-version transformations.
+Stage 8 is in progress. `int_forecast_versions` preserves the hourly grain and
+adds exact interval and decimal-hour lead times. Its six tests protect required
+fields and composite uniqueness. The full dbt build now passes four views and
+seventeen tests: PASS=21. The model retains 1,848 rows, including 141 valid
+negative lead times. The isolated dbt environment uses Python 3.12, Core
+1.11.14, adapter 1.11.0. See docs/dbt.md.
 Image digest pinning remains outstanding for exact Docker reproducibility.
 
 Continue with short practical explanations and focused changes. Explain the
