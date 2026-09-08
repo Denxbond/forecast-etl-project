@@ -8,9 +8,9 @@ API response, load normalized forecast snapshots into PostgreSQL, transform the
 data with dbt, and orchestrate the workflow with Airflow.
 
 > Project status: Stage 8 — forecast-version transformations — is in progress.
-> The first intermediate view adds exact interval and decimal-hour forecast lead
-> times while preserving every retrieval version. Four views and seventeen data
-> tests pass.
+> The first intermediate view adds forecast lead times, version ordering, and a
+> latest-version flag while preserving every retrieval. Four views and twenty
+> data tests pass.
 > See [the local dbt guide](docs/dbt.md) for setup and commands.
 > See [the testing guide](docs/testing.md) for checks and known limits.
 

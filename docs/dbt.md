@@ -76,12 +76,17 @@ forecast_at)` and adds two representations of lead time:
 - `forecast_lead_time`: the exact PostgreSQL interval `forecast_at - retrieved_at`.
 - `forecast_lead_hours`: the same difference expressed as decimal hours for
   filtering, charting, and future horizon buckets.
+- `forecast_version_number`: chronological retrieval order for each city and
+  forecast hour, starting at 1.
+- `is_latest_forecast_version`: identifies the newest retained prediction
+  without removing its history.
 
 Lead time may be negative because the API's forecast window begins at midnight,
 which can precede retrieval. The model does not filter those rows or collapse
-retrieval versions. Six model tests check non-null keys and derived fields plus
-composite uniqueness. On 2026-09-07, the full build passed four views and
-seventeen tests: `PASS=21 WARN=0 ERROR=0`.
+retrieval versions. Nine model tests check required fields, composite
+uniqueness, contiguous version numbering, and exactly one latest row per
+city/forecast hour. On 2026-09-08, the full build passed four views and twenty
+tests: `PASS=24 WARN=0 ERROR=0`.
 
 Image digest pinning, cross-platform dependency verification, and later CI
 remain separate work.

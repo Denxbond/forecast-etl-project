@@ -24,3 +24,11 @@ models:
         description: "Exact lead time expressed as decimal hours for filtering, charting, and later horizon bucketing; may be negative."
         data_tests:
           - not_null
+      - name: forecast_version_number
+        description: "Retrieval sequence for a city and forecast hour, starting at 1 for the earliest saved prediction."
+        data_tests:
+          - not_null
+      - name: is_latest_forecast_version
+        description: "True for the newest retrieval of a city and forecast hour; historical versions remain in the model."
+        data_tests:
+          - not_null

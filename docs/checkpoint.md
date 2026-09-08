@@ -39,11 +39,13 @@ HTTP behavior, and database settings now have reusable tests. All three check
 commands passed on 2026-09-06; see docs/testing.md.
 Stage 7 is complete: three sources, three staging views, and eleven dbt tests.
 Stage 8 is in progress. `int_forecast_versions` preserves the hourly grain and
-adds exact interval and decimal-hour lead times. Its six tests protect required
-fields and composite uniqueness. The full dbt build now passes four views and
-seventeen tests: PASS=21. The model retains 1,848 rows, including 141 valid
-negative lead times. The isolated dbt environment uses Python 3.12, Core
-1.11.14, adapter 1.11.0. See docs/dbt.md.
+adds exact interval and decimal-hour lead times, chronological version numbers,
+and a latest-version flag. Its nine tests protect required fields, composite
+uniqueness, contiguous numbering, and exactly one latest row per city/forecast
+hour. The full dbt build passes four views and twenty tests: PASS=24. The model
+retains 1,848 rows, including 141 valid negative lead times; 168 city/forecast
+hours have a second retrieval version. The isolated dbt environment uses Python
+3.12, Core 1.11.14, adapter 1.11.0. See docs/dbt.md.
 Image digest pinning remains outstanding for exact Docker reproducibility.
 
 Continue with short practical explanations and focused changes. Explain the
